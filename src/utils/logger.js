@@ -6,46 +6,70 @@ const customLevels = {
         error: 1,
         warning: 2,
         info: 3,
-        http: 4,
-        debug: 5,
+        debug: 4,
     },
     colors: {
-        fatal: "red",
-        error: "orange",
-        warning: "yellow",
+        fatal: "bold red",
+        error: "magenta",
+        warning: "bold yellow",
         info: "blue",
-        http: "green",
-        debug: "white"
+        debug: "gray",
     }
 }
+let alignColorsAndTime = winston.format.combine(
+    winston.format.colorize({
+        colors: customLevels.colors
+    }),
+    winston.format.label({
+        label:'[LOGGER]'
+    }),
+    winston.format.timestamp({
+        format:"YY-MM-DD HH:mm:ss"
+    }),
+    winston.format.printf(
+        info => ` ${info.label}  ${info.timestamp}  ${info.level} : ${info.message}`
+    )
+);
 
 const devLogger = winston.createLogger({
-    levels: customLevels,
+    levels: customLevels.levels,
     transports : [
         new winston.transports.Console({ 
             level: "debug",
             format: winston.format.combine(
-                winston.format.colorize({ colors: customLevels.colors }),
-                winston.format.simple()
+                winston.format.colorize(),
+                alignColorsAndTime,
             )
     }),
     ]
 })
 
 const prodLogger = winston.createLogger({
-    levels: customLevels,
+    levels: customLevels.levels,
     transports : [
         new winston.transports.Console({ 
             level: "info",
             format: winston.format.combine(
-                winston.format.colorize({ colors: customLevels.colors }),
-                winston.format.simple()
+                winston.format.colorize(),
+                //winston.format.simple()
+                alignColorsAndTime
             )
     }),
         new winston.transports.File({ 
             filename: "./errors.log", 
             level: "error",
-            format: winston.format.simple()
+            timestamp: function(){return Date.now();},
+            format: winston.format.combine(
+                winston.format.timestamp({
+                    format:"YY-MM-DD HH:mm:ss"
+                }),
+                winston.format.label({
+                    label:'[LOGGER]'
+                }),
+                winston.format.printf(
+                    info => `${info.label} ${info.timestamp}  ${info.level} : ${info.message}`
+                )
+            )
         }),
     ]
 });
